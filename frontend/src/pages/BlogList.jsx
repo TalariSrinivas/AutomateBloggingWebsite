@@ -7,7 +7,8 @@ function BlogList() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/blogs')
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    fetch(`${backendUrl}/api/blogs`)
       .then(response => {
         if (!response.ok) throw new Error('Failed to fetch');
         return response.json();
