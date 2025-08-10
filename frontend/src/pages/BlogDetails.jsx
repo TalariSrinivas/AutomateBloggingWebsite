@@ -15,7 +15,7 @@ export default function BlogDetail() {
     { id: 2, author: 'John Smith', text: 'Very insightful, thanks for sharing.' },
   ]);
 
-  // Dummy related posts (replace with real fetch if needed)
+  // Dummy related posts
   const [relatedBlogs, setRelatedBlogs] = useState([
     { _id: 'r1', title: 'Understanding React Hooks', imageUrl: null },
     { _id: 'r2', title: 'Advanced Tailwind CSS Tips', imageUrl: null },
@@ -25,8 +25,9 @@ export default function BlogDetail() {
   useEffect(() => {
     setLoading(true);
     setError(null);
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-    fetch(`http://localhost:5000/api/blogs/${id}`)
+    fetch(`${backendUrl}/api/blogs/${id}`)
       .then(res => {
         if (!res.ok) {
           if (res.status === 404) throw new Error('Blog not found.');
@@ -35,8 +36,15 @@ export default function BlogDetail() {
         return res.json();
       })
       .then(data => {
-        if (!data || Object.keys(data).length === 0) throw new Error('Blog not found.');
-        setBlog(data);
+        console.log("Fetched blog:", data);
+
+        // Works for { ...blog } or { data: { ...blog } }
+        const blogData = data.data || data;
+        if (!blogData || Object.keys(blogData).length === 0) {
+          throw new Error('Blog not found.');
+        }
+
+        setBlog(blogData);
         setLoading(false);
       })
       .catch(err => {
@@ -59,7 +67,7 @@ export default function BlogDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-tr from-gray-900 via-indigo-900 to-purple-900 text-white">
+      <div className="flex items-center justify-center min-h-screen text-gray-500">
         <div className="w-12 h-12 border-4 border-t-indigo-400 border-gray-600 rounded-full animate-spin"></div>
         <p className="ml-4 text-lg font-semibold">Loading blog post...</p>
       </div>
@@ -68,7 +76,7 @@ export default function BlogDetail() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-tr from-gray-900 via-indigo-900 to-purple-900 text-red-400 px-4 text-center">
+      <div className="flex flex-col items-center justify-center min-h-screen text-red-400 px-4 text-center">
         <h2 className="text-2xl font-semibold mb-2">{error}</h2>
         <p className="text-gray-300">Please check the URL or try again later.</p>
         <Link
@@ -82,9 +90,9 @@ export default function BlogDetail() {
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-tr from-gray-900 via-indigo-900 to-purple-900 text-gray-100 font-sans px-6 sm:px-12 py-20">
+    <div className="relative min-h-screen text-gray-100 font-sans px-6 sm:px-12 py-20">
       {/* Main Container */}
-      <div className="w-9/10 mx-auto bg-gray-900 bg-opacity-70 backdrop-blur-md rounded-3xl shadow-2xl p-8 md:p-12 border border-indigo-600/40 flex flex-col lg:flex-row gap-12">
+      <div className="w-4/5 mx-auto backdrop-blur-md rounded-3xl border-l-6 border-purple-500 shadow-2xl p-8 md:p-12 flex flex-col lg:flex-row gap-12">
         
         {/* Image Left */}
         {blog.imageUrl && (
@@ -122,9 +130,12 @@ export default function BlogDetail() {
           </div>
 
           {/* Content */}
-          <article className="prose prose-invert max-w-none text-lg leading-relaxed mb-10">
-            <p>{blog.content}</p>
-          </article>
+          <article className="prose prose-invert max-w-none text-lg text-gray-500 leading-relaxed mb-12">
+          {/* This is the key change to handle newlines correctly */}
+          {blog.content.split('\n').map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
+        </article>
 
           {/* Tags */}
           {blog.tags && blog.tags.length > 0 && (
@@ -160,11 +171,7 @@ export default function BlogDetail() {
       </div>
 
       {/* --- NEW SEPARATE BOTTOM CONTAINER --- */}
-      <div className="w-9/10 mx-auto mt-16 bg-gray-900 bg-opacity-70 backdrop-blur-md rounded-3xl shadow-2xl p-8 md:p-12 border border-indigo-600/40 flex flex-col gap-12">
-
-        
-      
-
+      <div className="w-4/5 mx-auto mt-16 rounded-3xl shadow-2xl p-8 md:p-12 border-l-6 border-red-500 flex flex-col gap-12">
         {/* Comments Section */}
         <section>
           <h3 className="text-2xl font-semibold mb-6 text-indigo-300">Comments</h3>
@@ -174,7 +181,7 @@ export default function BlogDetail() {
               onChange={(e) => setComment(e.target.value)}
               placeholder="Write your comment here..."
               rows={4}
-              className="w-full rounded-md p-3 resize-none bg-gray-800 bg-opacity-70 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-md p-3 resize-none text-red-500 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xl border-1 border-purple-500"
               required
             ></textarea>
             <button
@@ -196,38 +203,6 @@ export default function BlogDetail() {
             ))}
           </ul>
         </section>
-
-        {/* Related Posts */}
-        {relatedBlogs.length > 0 && (
-          <section>
-            <h3 className="text-2xl font-semibold mb-6 text-indigo-300">Related Posts</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {relatedBlogs.map(({ _id, title, imageUrl }) => (
-                <Link
-                  key={_id}
-                  to={`/blogs/${_id}`}
-                  className="group block rounded-lg overflow-hidden shadow-lg border border-indigo-600 bg-gray-800 hover:bg-gray-700 transition transform hover:-translate-y-1"
-                >
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt={title}
-                      loading="lazy"
-                      className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-40 bg-indigo-600 flex items-center justify-center text-white font-semibold">
-                      No Image
-                    </div>
-                  )}
-                  <div className="p-4 text-indigo-100 font-semibold line-clamp-2">
-                    {title}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
       </div>
     </div>
   );
